@@ -39,6 +39,7 @@ python dti_analysis.py all  \
 ![dti analysis plot][dti_analysis]
 
 **outlier_chemical_analysis** generates the same PCA of SPRINT compound embeddings as dti_analysis.py but also creates a PCA of the molecular fingerprints of each compound. Outliers from the SPRINT PCA are labeled in the fingerprint PCA, creating an easy visualization that shows whether SPRINT embedding outliers are also chemical outliers. Refer to dti_analysis.py for usage.
+
 ![chemical analysis plot][chemical_analysis]
 
 [dti_analysis]: https://github.com/CFerrance/Virtual-Screen-Tools/tree/main/Images/dti_analysis_example.png "DTI Analysis"
