@@ -1,30 +1,36 @@
 #!/bin/bash
 #SBATCH --job-name=deepdock_helper
-#SBATCH --partition=CHOOSE_PARTITION
-#SBATCH --nodelist=CHOOSE_NODE
+#SBATCH --partition=dept_cpu,dept_gpu
+#SBATCH --nodelist=NODE
 #SBATCH --nodes=1
-#SBATCH --mail-user=EMAIL
-#SBATCH --mail-type=END,FAIL
 
 echo Running on `hostname`
 echo workdir $SLURM_SUBMIT_DIR
 echo Start Time: $(date)
 
-#Constant Paths
-CLUSTER_YAML=slurm.yaml         #from GNINA directory
-SPRINT=/SPRINT/CHECKPOINT/PATH  
-GNINA=/GNINA/EXE/PATH
+eval "$(conda shell.bash hook)"
+conda activate deepdock_env
 
+## CONSTANTS
+## molPort library: /net/galaxy/home/koes/dkoes/data/molport.smiles
+## enamine library: /net/g023/scr/dkoes/REAL/REAL.parquet
+## cluster yaml: local slurm.yaml
+## gnina executable: /net/galaxy/home/koes/dkoes/local/bin/gnina
+## Sprint checkpoint: /net/galaxy/home/koes/dkoes/git/panspecies-dti/checkpoints/sprint.ckpt
 
 COMMAND=$1              #deepdock command
-PDB_PROTEIN=$2          #receptor pdb file
-PDB_LIGAND=$3           #ligand pdb file
-SEQUENCE=$4             #receptor fasta file
-CHEMICAL_LIBRARY=$5     #chemical library .parquet folder
-OUTPUT_DIR=$6
+MAX_WORKERS=$2          #max workers
 
-#scratch drive folder to work in
-SCRDIR=/net/node/scr/user
+DEEPDOCK=$HOME/path/to/deepdock.py
+RECEPTOR=$HOME/path/to/receptor
+LIGAND=$HOME/path/to/ligand
+SEQUENCE=$HOME/path/to/sequence
+LIBRARY=path/to/library             #replace with library from constants
+CLUSTER_YAML=$HOME/path/to/slurm.yaml
+OUT=deepdock_results
+
+SCRDIR=/net/NODE/scr/USER           #scratch drive path, replace with node + folder name
+
 
 #if the scratch drive doesn't exist (it shouldn't) make it.
 if [[ ! -e $SCRDIR ]]; then
@@ -33,25 +39,29 @@ fi
 chmod +rX $SCRDIR
 echo scratch drive ${SCRDIR}
 
-#Copy Inputs
-cp $SLURM_SUBMIT_DIR/$PDB_PROTEIN ${SCRDIR}
-cp $SLURM_SUBMIT_DIR/$PDB_LIGAND ${SCRDIR}
-cp $SLURM_SUBMIT_DIR/$SEQUENCE ${SCRDIR}
-cp $SLURM_SUBMIT_DIR/$CLUSTER_YAML ${SCRDIR}
+#Copy Inputs to scratch directory for faster access
+cp $RECEPTOR ${SCRDIR}
+cp $LIGAND ${SCRDIR}
+cp $SEQUENCE ${SCRDIR}
+cp $CLUSTER_YAML ${SCRDIR}
 
 cd ${SCRDIR}
 
 #setup to copy files back to working dir on exit
 trap "mv $OUTPUT_DIR $SLURM_SUBMIT_DIR" EXIT
 
-python $SLURM_SUBMIT_DIR/deepdock.py $COMMAND \
-    --input $CHEMICAL_LIBRARY \
-    --dir ${SCRDIR}/$(basename $OUTPUT_DIR) \
+python $DEEPDOCK $COMMAND \
+    --input $LIBRARY \
+    --dir ${SCRDIR}/$(basename $OUT) \
     --cluster ${SCRDIR}/$(basename $CLUSTER_YAML) \
     --target_sequence ${SCRDIR}/$(basename $SEQUENCE) \
-    --sprint_checkpoint $SPRINT \
+    --sprint_checkpoint /net/galaxy/home/koes/dkoes/git/panspecies-dti/checkpoints/sprint.ckpt \
     --receptor ${SCRDIR}/$(basename $PDB_PROTEIN) \
     --autobox_ligand ${SCRDIR}/$(basename $PDB_LIGAND) \
-    --gnina_executable $GNINA \
+    --gnina_executable /net/galaxy/home/koes/dkoes/local/bin/gnina \
+    --max_workers=$MAX_WORKERS \
+    --iolimit 100 \
+    --smiles-only
 
 echo Finish Time: $(date)
+
