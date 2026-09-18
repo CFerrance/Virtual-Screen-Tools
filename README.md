@@ -5,9 +5,9 @@ This repository contains virtual screen tools meant to be used with [SPRINT](htt
 For screening virtual chemical libraries against a specific target.
 
 **deepdock_helper_template.slurm**
-This script runs deepdock on high performance computing clusters using the slurm scheduler. Make sure to edit values to including partition, email, and GNINA and SPRINT checkpoints to your needs.
+This script runs deepdock on high performance computing clusters using the slurm scheduler. Edit the script beforehand to change receptor, ligand, and sequence paths. Also make sure to edit the partition, node, and scratch directory. Includes two command line arguments, deepdock command (see deepdock script) and worker count.
 ```bash
-sbatch deepdock_helper_template.slurm all library.parquet pdhe1/receptor.pdb pdhe1/ligand.pdb pdhe1/sequence.pdb pdhe1_screen
+sbatch deepdock_helper_template.slurm all 500
 ```
 
 **drug_like_filter.py** filters Deepdock output predictions (topn.sdf) for drug-like properties including maximum molecular weight, predicted affinity (from GNINA), and predicted solubility (from [SolTranNet](https://github.com/gnina/SolTranNet)).
